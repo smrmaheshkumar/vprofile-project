@@ -54,29 +54,51 @@ pipeline {
             }
         }
 
-        stage('CODE ANALYSIS with SONARQUBE') {
+	
+
+    //     stage('CODE ANALYSIS with SONARQUBE') {
           
-		  environment {
-             scannerHome = tool 'sonarscanner4'
-          }
+		  // environment {
+    //          scannerHome = tool 'sonarscanner4'
+    //       }
 
-          steps {
-            withSonarQubeEnv('sonar-pro') {
-               sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
-                   -Dsonar.projectName=vprofile-repoo \
-                   -Dsonar.projectVersion=1.0 \
-                   -Dsonar.sources=src/ \
-                   -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
-                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
-                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
-                   -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
-            }
+    //       steps {
+    //         withSonarQubeEnv('sonar-pro') {
+    //            sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
+    //                -Dsonar.projectName=vprofile-repoo \
+    //                -Dsonar.projectVersion=1.0 \
+    //                -Dsonar.sources=src/ \
+    //                -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
+    //                -Dsonar.junit.reportsPath=target/surefire-reports/ \
+    //                -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+    //                -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
+    //         }
 
-            timeout(time: 10, unit: 'MINUTES') {
-               waitForQualityGate abortPipeline: true
-            }
-          }
-        }
+    //         timeout(time: 10, unit: 'MINUTES') {
+    //            waitForQualityGate abortPipeline: true
+    //         }
+    //       }
+    //     }
+
+	    stage('SonarQube Analysis') {
+	      steps {
+	        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+	          sh """
+	            cd webapp
+	            mvn sonar:sonar \\
+	              -Dsonar.projectKey=vprofile \\
+	              -Dsonar.host.url=${SONAR_URL} \\
+	              -Dsonar.login=${SONAR_AUTH_TOKEN} \\
+	       	      -Dsonar.projectVersion=1.0 \\
+	       	      -Dsonar.sources=src/ \\
+                      -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \\
+                      -Dsonar.junit.reportsPath=target/surefire-reports/ \\
+                      -Dsonar.jacoco.reportsPath=target/jacoco.exec \\
+                      -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+	          """
+	        }
+	      }
+	    }
 
         stage("Publish to Nexus Repository Manager") {
             steps {
@@ -114,9 +136,5 @@ pipeline {
                 }
             }
         }
-
-
     }
-
-
 }
